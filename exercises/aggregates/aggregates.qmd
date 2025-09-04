@@ -106,7 +106,7 @@ So to do this, we'll take our dataset and we'll introduce a new operator: |>. Th
 
 After we group them together, we need to count them. We do that first by saying we want to summarize our data (a count is a part of a summary). To get a summary, we have to tell it what we want. So in this case, we want a count. To get that, let's create a thing called total and set it equal to n(), which is `dplyr`s way of counting something.
 
-Here's the code. You should run it and then describe the output.
+Here's the code. You should run it and then describe the output.  
 
 ```{r}
 nbaplayers |>
