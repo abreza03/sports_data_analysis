@@ -1,6 +1,6 @@
 ---
 title: "Aggregates Exercises"
-author: "Derek Willis"
+author: "Andrew Breza"
 date: "2023-08-15"
 output: html_document
 ---
