@@ -12,7 +12,7 @@ We'll want to start with 2025 match data, which is located in [this GitHub repos
 
 
 ```{r}
-matches_2025 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2025.csv") |> mutate(diff = team_score - opponent_score)
+matches_2025 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2025.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals)
 ```
 
 Let's take a look at this data to see what it contains, using `head` and `glimpse`:
@@ -40,7 +40,7 @@ matches_2025 |>
 2. What about the same shot stats from last season's first four games? You'll need to load the matches from 2024 - just change the season in the URL - and filter by date to find the first four games.
 
 ```{r}
-matches_2024 <-
+matches_2024 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2024.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals)
 ```
 
 
@@ -57,6 +57,21 @@ matches_2024 <-
 
 
 ```
+
+```{r}
+matches_2025 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2025.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals)
+
+matches_2024 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2024.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals)
+
+matches_2024 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2024.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals) |> filter(date < '2024-09-18')
+```
+t-test
+
+```{r}
+t.test(matches_2024$total_goals, matches_2025$total_goals)
+```
+
+
 
 5. What's the most interesting thing you've seen from these questions?
 
@@ -100,4 +115,50 @@ big10_matches |>
     )
 
 ```
+## Correlations & Regressions
 
+```{r}
+correlations <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2024.csv")
+
+newcorrelations <- correlations |> 
+  mutate(
+    differential = goals - defensive_goals
+    )
+
+newcorrelations |> summarise(correlation = cor(differential, fouls, method="pearson"))
+
+newcorrelations |> summarise(correlation = cor(differential, yellow_cards, method="pearson"))
+
+fit <- lm(differential ~ fouls, data = newcorrelations)
+summary(fit)
+
+newcorrelations |> 
+  summarise(correlation = cor(differential, so_g, method="pearson"))
+
+net <- lm(differential ~ so_g, data = newcorrelations)
+summary(net)
+```
+
+### 2025 Version
+```{r}
+correlations25 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2025.csv")
+
+newcorrelations <- correlations25 |> 
+  mutate(
+    differential = goals - defensive_goals,
+    so_g_diff = so_g - defensive_so_g
+    )
+
+newcorrelations |> summarise(correlation = cor(differential, defensive_so_g, method="pearson"))
+
+terps25 <- newcorrelations |> 
+  filter(team == "Maryland Terrapins, Terps")
+
+defensive_sog_model <- lm(differential ~ defensive_so_g, data = newcorrelations)
+summary(defensive_sog_model)
+
+terps_defensive_sog_model <- lm(differential ~ defensive_so_g, data = terps25)
+summary(terps_defensive_sog_model)
+```
+### Women's Soccer Correlation Story Pitch
+The correlation between defensive shots on goal allowed and game outcome for Maryland Women's Soccer is statistically significant. In all four of their losses so far this season, their shots on goal differential has been heavily in the negatives, with each being at least -5. In three of their four losses, the Terps only got one shot on goal. However, what's interesting about this is that in their latest game against Purdue, the Terps were once again in the negatives - -4 - but they won. What specifically did they do to overcome what has typically buried them in past games?
