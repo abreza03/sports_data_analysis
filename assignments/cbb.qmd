@@ -1,0 +1,73 @@
+```{r}
+library(tidyverse)
+library(Hmisc)
+```
+```{r}
+logs <- read_csv("https://dwillis.github.io/sports-data-files/cbblogs1525.csv")
+```
+```{r}
+logs <- logs |> mutate(
+  Differential = TeamScore - OpponentScore, 
+  NetRebounds = TeamTotalRebounds - OpponentTotalRebounds,
+  TurnoverMargin = TeamTurnovers - OpponentTurnovers)
+```
+
+```{r}
+rebounds <- lm(Differential ~ NetRebounds, data=logs)
+summary(rebounds)
+```
+```{r}
+model1 <- lm(Differential ~ NetRebounds + TeamTotalRebounds, data=logs)
+summary(model1)
+```
+```{r}
+simplelogs <- logs |> select_if(is.numeric) |> select(-Game) |> select(Differential, NetRebounds, TurnoverMargin, TeamFGPCT, TeamTotalRebounds, OpponentFGPCT, OpponentTotalRebounds, Team3PPCT, Opponent3PPCT, TeamPersonalFouls, OpponentPersonalFouls)
+
+cormatrix <- rcorr(as.matrix(simplelogs))
+
+cormatrix$r
+```
+```{r}
+model2 <- lm(Differential ~ NetRebounds + TurnoverMargin + Team3PPCT + Opponent3PPCT + TeamPersonalFouls + OpponentPersonalFouls, data=logs)
+summary(model2)
+```
+```{r}
+logs |> 
+  filter(Team == "Michigan" & Season == '2020-2021' | Team == "Wisconsin" & Season == '2019-2020' | Team == "Michigan State" & Season == '2018-2019' | Team == "Michigan State" & Season == '2017-2018' | Team == 'Illinois' & Season == '2021-2022' | Team == 'Purdue' & Season == '2022-2023' | Team == 'Purdue' & Season == '2023-2024' | Team == "Michigan State" & Season == '2024-2025') |> 
+  summarise(
+    meanNetRebounds = mean(NetRebounds),
+    meanTurnoverMargin = mean(TurnoverMargin),
+    meanTeam3PPCT = mean(Team3PPCT),
+    meanOpponent3PPCT = mean(Opponent3PPCT),
+    meanTeamPersonalFouls = mean(TeamPersonalFouls),
+    meanOpponentPersonalFouls = mean(OpponentPersonalFouls)
+  )
+```
+```{r}
+(1.011895*9.432099) + (-1.499956*1.711934) + (44.618764*0.3643169) + (-45.078572*0.3126008) + (-0.324338*15.74074) + (0.283987*18.78601) + 1.140186
+```
+```{r}
+logs |> 
+  filter(
+    Team == "Maryland" & Season == '2024-2025'
+    ) |> 
+  summarise(
+    meanNetRebounds = mean(NetRebounds),
+    meanTurnoverMargin = mean(TurnoverMargin),
+    meanTeam3PPCT = mean(Team3PPCT),
+    meanOpponent3PPCT = mean(Opponent3PPCT),
+    meanTeamPersonalFouls = mean(TeamPersonalFouls),
+    meanOpponentPersonalFouls = mean(OpponentPersonalFouls)
+  )
+```
+```{r}
+(1.011895*2.472222) + (-1.499956*-3.444444) + (44.618764*0.3665556) + (-45.078572*0.30925) + (-0.324338*15.33333) + (0.283987*17.94444) + 1.140186
+```
+```{r}
+logs |> 
+     filter(
+         Team == "Maryland" & Season == '2024-2025'
+     ) |> summarise(avg_score = mean(TeamScore), avg_opp = mean(OpponentScore))
+```
+### Men's Basketball Multiple Regression
+I'm trying to see if there's a discrepancy between the multiple regression model we did in class based on team and opponent overall shooting % by making it more specific - team and opponent 3 point shooting %. To try to lower the residual standard error, I'm also adding team and opponent personal fouls. 3 poin shooting versus 3 point shooting allowed is a very extreme measure, but an important one. And in my experience covering Maryland basketball last season, and emphasis was placed on trying to limit fouls, especially down the stretch. When we plug those in, we get an appropriate p-value, an adjusted R-squared value of about .79, and a respectable residual standard error of 7.66. Comparing these numbers to the former Big Ten Champions, the model shows that those teams outshot their opponents from beyond the arc and committed less personal fouls than their opponents. When we calculate those totals, our model projects a very small change in expected +points total, changing to 10.51. When we compare those numbers to Maryland, we once again find that the Terps had the makings of a conference champion team, as they too outshot their opponents from three and committed less fouls. When we calculate the totals, we once again see just a slight change, but a slight upgrade in expected +points total, changing to 11.35. Although not major changes to either, it does seem to suggest that the differential between how a team shoots beyond the arc compared to their opponents, as well as the fouls they commit versus the fouls their opponents commit, are both important and statistically significant.
