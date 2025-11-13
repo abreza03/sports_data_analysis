@@ -1,0 +1,205 @@
+---
+title: "Analyzing the relationship between successful 4th down attempts and wins in the NFL"
+Author: Andrew Breza
+Date:11/2/25
+---
+
+## Within the past 5 years or so, NFL teams have been going for it on 4th down more frequently, with the reasoning of "it's what the analytics say to do". But what analytics are those actually? Are they correct? My goal was to see if there was a correlation between 4th down attempts converted and offensive success, primarily by measuring EPA, along with measuring a few other factors such as time on the clock, field position, score, etc. I was also trying to keep in mind other factors that are more difficult to track through code: how effective is a team's offensive line? Do they have a mobile quarterback who can extend broken plays? Let's dig in.
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+install.packages("nflfastR")
+library(nflfastR)
+install.packages("nflreadr")
+library(nflreadr)
+```
+```{r}
+season <- 2024
+
+pbp <- load_pbp(2024)
+
+fourth_down_pbp <- pbp |> 
+filter(down == 4, play_type %in% c("run", "pass"), yards_gained > ydstogo) |> 
+mutate(fourth_down_successful = yards_gained > ydstogo)
+
+fourth_down_pbp |> 
+group_by(posteam) |> 
+summarise(epa)
+```
+### The first thing that I wanted to analyze before trying to create any graphs is...is there actually a correlation here?
+```{r}
+fit <- lm(fourth_down_successful ~ epa, data = fourth_down_pbp)
+summary(fit)
+```
+## So, we can see that the relationship between successful 4th down attempts and offensive EPA is very much statistically significant. However, our adjusted R-squared value is only about 50%. Not bad, but let's try to narrow it down even more, to when teams decide to go for it when losing with less than 5 minutes left in the 4th quarter.
+```{r}
+clutch_time <- fourth_down_pbp |> 
+filter(qtr == 4, game_seconds_remaining < 300, posteam_score < defteam_score)
+
+fit <- lm(fourth_down_successful ~ epa, data = clutch_time) 
+summary(fit)
+```
+## Honestly...I expected the adjusted R-squared value to be a lot higher. Oh well. Now, I'll create a few different graphs that shows the data we've collected so far as well as a few additional charts that look at other data points.
+```{r}
+fourth_down_attempts <- fourth_down_pbp |> 
+group_by(posteam) |> 
+  summarise(plays = n(), total_epa = sum(epa)) |> 
+  arrange(desc(total_epa))
+```
+```{r}
+ggplot() + geom_point(data = fourth_down_attempts, aes(x=plays, y=total_epa)) +
+geom_smooth(data = fourth_down_attempts, aes(x=plays, y=total_epa), method = lm)
+```
+## We can see that the number of fourth down conversions doesn't necessarily equate to a great offensive EPA - Washington is an extreme outlier at the top, while certain teams had a higher EPA than others despite running fewer plays. Let's quickly take a look at how our sub 5 minutes in the 4th quarter data looks, analyzing EPA.
+
+```{r}
+fourth_q_fourth_downs_epa <- clutch_time |> 
+group_by(posteam) |> 
+  summarise(plays = n(), total_epa = sum(epa)) |>
+  arrange(desc(total_epa))
+```
+## Uh...wow. When losing with less than 5 minutes in the 4th quarter, the NFL's 2024 leader in offensive EPA was...the Cleveland Browns? What alternate reality are we living in? Let's take a look at win percentage both before the play was run and afterwards. How much did the teams help themselves towards getting a win?
+
+## Note: In nflfastr, "wp" means win probability for the team with the ball before the play is ran. "wpa" means win probability added after the play was run.
+
+```{r}
+fourth_q_fourth_downs_wpbefore <- clutch_time |> 
+group_by(posteam) |> 
+  summarise(plays = n(), wp_before = sum(wp)) |> 
+  arrange(desc(wp_before))
+```
+## Wow. With less than 5 minutes left in the 4th quarter and trailing, amongst the five 4th down plays the Bears ran, before they ran the play they had a collective win probably of about 73%, much higher than anybody else on the list. Why is that?
+
+```{r}
+bears_4th_quarter_wp <- clutch_time |> 
+filter(posteam == "CHI")
+```
+## We're left with a pretty interesting data set. All 5 plays the Bears ran in this instance was a shotgun pass with less than 2:14 on the clock. They only scored on one of them, when they were at the Colts' 6 yard line, which was also the only time they were in the redzone. Let's check to see if any of these plays actually ended up increasing their win percentage.
+
+```{r}
+fourth_q_fourth_downs_wpafter <- clutch_time |> 
+group_by(posteam) |> 
+  summarise(plays = n(), wp_after = sum(wpa)) |> 
+  arrange(desc(wp_after))
+```
+## Reminder: "wpa" doesn't equate to the sum of the win percentage after the plays are run, it stands for the sum of win probably added. The Bears were impressively once again on top of the league, giving themselves a 42% additional chance to win in clutch time across those five games. Did they end up winning any?
+```{r}
+bears_results_away <- clutch_time |> 
+filter(posteam == "CHI", away_team == "CHI") |> 
+group_by(posteam) |>
+  summarise(Bears = total_away_score, Opponent = total_home_score)
+
+bears_results_home <- clutch_time |> 
+filter(posteam == "CHI", home_team == "CHI") |> 
+group_by(posteam) |> 
+  summarise(Bears = total_home_score, Opponent = total_away_score)
+
+bears_results_total <- bind_rows(bears_results_away, bears_results_home)
+```
+## Good old Chicago. Let's go back to a more simplistic view, and take a look at each team's total 4th down conversion percentage.
+
+```{r}
+fourth_down_totals <- pbp |> 
+filter(down == 4, play_type %in% c("run", "pass")) |> 
+group_by(posteam) |> 
+  summarise(fourth_downs = n()) |> 
+  arrange(desc(fourth_downs))
+
+fourth_down_successful <- fourth_down_pbp |> 
+group_by(posteam) |> 
+  summarize(fourth_down_conversions = n()) |> 
+  arrange(desc(fourth_down_conversions))
+
+combined_fourth_downs <- fourth_down_totals |> 
+inner_join(fourth_down_successful, join_by(posteam)) |>
+mutate(fourth_down_pct = fourth_down_conversions/fourth_downs *100) |> 
+  arrange(desc(fourth_down_pct))
+
+fourth_down_epa <- fourth_down_pbp |> 
+group_by(posteam) |> 
+  summarise(total_epa = sum(epa)) |> 
+  arrange(desc(total_epa))
+
+fourth_down_epa_plus_conversion <- combined_fourth_downs |> 
+inner_join(fourth_down_epa, join_by(posteam))
+```
+
+## Now, we'll try to create a better chart than the one we made before. Let's make a bubble chart that analyzes number of wins for teams plotted against where they rank in total offensive EPA and 4th down conversion %. When researching additional dataframes, I came across the nflverse, which includes nflfastr and nflreadr, but also nflseedr for season simulations, nflplotr for visualizations, and...nfl4th. For 4th down analysis. Nice.
+
+```{r}
+install.packages("nflverse")
+library(nflverse)
+install.packages("dyplr")
+library(dplyr)
+```
+
+```{r}
+games_2024 <- nflreadr::load_schedules(2024)
+
+standings_2024 <- nflseedR::nfl_standings(games_2024)
+
+wins_2024 <- standings_2024 |> 
+group_by(team) |> 
+summarise(total_wins = wins)
+
+colnames(wins_2024)[colnames(wins_2024) == "team"] <- "posteam"
+
+final_chart <- wins_2024 |> 
+inner_join(fourth_down_epa_plus_conversion, join_by(posteam))
+
+colnames(final_chart)[colnames(final_chart) == "total_wins"] <- "Wins"
+colnames(final_chart)[colnames(final_chart) == "fourth_down_pct"] <- "FourthDownConversionPercentage"
+colnames(final_chart)[colnames(final_chart) == "total_epa"] <- "OffensiveEPA"
+  
+```
+## Now that I've got all the data I need as part of one data set, I can create the bubble chart.
+
+```{r}
+ggplot() +
+  geom_point(
+    data=final_chart,
+    aes(x=OffensiveEPA, y=FourthDownConversionPercentage, size=Wins)) +
+geom_vline(xintercept = 32.49604) +
+geom_hline(yintercept = 46.89985)
+
+final_chart |>
+  ungroup() |> 
+  summarise(
+    EPA = mean(OffensiveEPA),
+    Fourth = mean(FourthDownConversionPercentage))
+```
+## We can see that a lot of successful teams (in terms of number of wins), were at least above average at converting their fourth down attempts. However, only 10 teams in the league were above average in that AND in EPA, and of those 10 teams, only 6 made the playoffs. Let's visualize those teams:
+```{r}
+playoff_teams <- final_chart |> 
+mutate(playoff_team = Wins >=10)
+
+playoff_teams_plus_one <- playoff_teams |>  
+filter(playoff_team == "TRUE")
+
+real_playoff_teams <- playoff_teams_plus_one |> 
+filter(!posteam == "SEA")
+```
+
+
+```{r}
+ggplot() +
+  geom_point(
+    data=final_chart,
+    aes(x=OffensiveEPA, y=FourthDownConversionPercentage, size=Wins), alpha = .3) + scale_size(range = c(3, 8), name="Wins") +
+geom_vline(xintercept = 32.49604) +
+geom_hline(yintercept = 46.89985) +
+geom_point(data=real_playoff_teams,
+           aes(x=OffensiveEPA, y=FourthDownConversionPercentage, size=Wins), color="red") +
+geom_text_repel(data=real_playoff_teams,
+          aes(x=OffensiveEPA, y=FourthDownConversionPercentage, size=Wins, label = posteam)) +
+labs(title="Measuring Offensive Success on 4th Down", subtitle="Converting 4th downs leads to higher expected points added, but not necessarily wins", caption="Source: NFL | By Andrew Breza")  + theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 8), 
+    plot.subtitle = element_text(size=10), 
+    panel.grid.minor = element_blank()
+    )
+```
+
+## In conclusion, there is no direct correlation between converting on fourth downs and team success, even if converting on fourth downs increases EPA. In general, it is a positive thing, but it is not a telling factor of how good a team will be. 
