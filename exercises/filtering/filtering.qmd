@@ -138,7 +138,7 @@ players |>
   filter(Team == "Maryland Terrapins Men's")
 ```
 
-**ANSWER** Who do you get as the first result, and what was his trueshooting percentage?
+**ANSWER** We get Julian Reese, whose trueshooting percentage was about 60.76%.
 
 
 So is 100 minutes our level? Here's the truth -- there's not really an answer here. We're picking a cutoff. If you can cite a reason for it and defend it, then it probably works.
@@ -167,7 +167,7 @@ Now, let's generate total shot attempts and total shots on goal for just Marylan
 
 ```{r}
 matches_2025 |>
-  filter(team == 'Maryland Terrapins, Terps') |>
+  filter(team == 'Maryland Terrapins, Terps', date <= "2025-09-04") |>
   group_by(team) |>
   summarise(
     total_attempts = sum(sh_att),
@@ -178,7 +178,20 @@ matches_2025 |>
 Now it's your turn: do the same for the 2024 data. Load it from GitHub, then adapt the above code but add an additional filter to restrict the results to Maryland's first six games (the 6th game was on Sept. 1, 2024). You need to put the date value in quotes in this format: 'yyyy-mm-dd'
 
 ```{r}
+matches_2024 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2024.csv")
+```
 
+```{r}
+matches_2024 |>
+  filter(team == "Maryland Terrapins, Terps", date <= "2024-09-01") |>
+  group_by(team) |>
+  summarize(
+    total_attempts = sum(sh_att),
+    total_on_goal = sum (so_g)) |>
+  mutate(
+    percent = (total_on_goal/total_attempts)*100
+  )
 ```
 
 **ANSWER** How do the two years compare?
+Although we are analyzing one more game in 2025 (7 compared to 6 in 2024), the 2025 squad is doing significantly better at shot creation than the 2024 squad. They had 20 more shot attempts, 15 more shots on goal, and have seen about a 6.43% increase in their attempts that have been shots on goal. 
