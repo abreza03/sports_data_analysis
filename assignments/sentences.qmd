@@ -1,0 +1,23 @@
+---
+title: "sentences"
+format: html
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+soccer <- read_csv("https://dwillis.github.io/sports-data-files/ncaa_womens_soccer_totals_2024.csv")
+```
+
+## The question that I proposed was "What is the best way to determine who the best team is at a certain metric when there are an uneven number of games played?" I think this question is certainly broad, but it worked very well for our Shot on Goal Percentage calculation. While it's very impressive that about 64% of Prairie View's shots were on goal, they played in 17 games. Professor Willis made a note saying that there was a team who played in 27 games. So I went and figured out who that was:
+
+```{r}
+soccer |>
+  mutate(SoGPct = (SoG/ShAtt)*100) |>
+  arrange(desc(goalie_shutouts))
+```
+## It was the UNC Tar Heels, who won the national championship. Not going to lie, I expected their SoGPct to be significantly higher - the national champions ranked 234th out of 348 Division 1 teams in SoGPct? Feels incredibly strange. Granted, when playing in more games, especially when it's two more than the next closest team, fatigue has to factor in. In the Tar Heels' case, their defense was absolutely elite. Their goaltender, Clare Gagne, was tied for first in the country in saves with 16, in five more games played than second place and three more games played than first place. 
+
+## I sort of answered my own question - looking at one particular statistic, regardless of how impressive or important it may be - is almost always too surface level if trying to indicate team success. 
