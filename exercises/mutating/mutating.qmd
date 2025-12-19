@@ -107,5 +107,24 @@ matches_2025 |>
 
 What stands out to you here? Describe that below. Would you narrow down the results to certain teams based on the data? If so, do that in the code and explain why you did it below. Finally, what's the most interesting result to you that could be a story?
 
-**Answer** The main thing that stands out to me is the discrepency between the number of shots on goal and goals amongst teams that are right next to each other based on percentage. Sure, Seton Hall is scoring at a slightly higher rate than Colorodo, but Colorado has 30 more shots on goal and 14 more goals. I'm going to calculate the mean shots on goal from this chart, then remake it using a similar figure. 
+**Answer** The main thing that stands out to me is the discrepency between the number of shots on goal and goals amongst teams that are right next to each other based on percentage. Sure, Seton Hall is scoring at a slightly higher rate than Colorodo, but Colorado has 30 more shots on goal and 14 more goals. I'm going to narrow it down slightly further by just doing the teams who are over the median of total shots on goal. 
+
+```{r}
+median_total_sog <- matches_2025 |>
+  filter(date <= "2025-09-09") |>
+  group_by(team) |> 
+  summarise(
+    total_on_goal = sum(so_g),
+    total_goals = sum(goals)) |> 
+  mutate(percent = (total_goals/total_on_goal)*100) |> 
+  arrange(desc(percent))
+
+median_total_sog |>
+  mutate(median_total_on_goal = median(total_on_goal))
+
+median_total_sog |> 
+  filter(total_on_goal >= "36.5") |>
+  arrange(desc(percent))
+```
+## I think this is a more accurate depiction of who was performing the best on offense at this point in the season. 
 
