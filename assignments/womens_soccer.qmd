@@ -99,10 +99,11 @@ Not only does the record show it, but the stats reflect it as well: Maryland is 
 ### WOMEN'S SOCCER NOTEBOOK ASSIGNMENT ENDS HERE
 
 
-```{r}
-matches_2025 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2025.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals)
+### WOMEN'S SOCCER TEST ASSIGNMENT BEGINS HERE
 
-matches_2024 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2024.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals)
+
+```{r}
+matches_2025 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2025.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals) |> filter(date <'2025-09-18')
 
 matches_2024 <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensSoccerData/main/data/ncaa_womens_soccer_matchstats_2024.csv") |> mutate(diff = team_score - opponent_score, total_goals = goals + defensive_goals) |> filter(date < '2024-09-18')
 ```
@@ -111,6 +112,25 @@ t-test
 ```{r}
 t.test(matches_2024$total_goals, matches_2025$total_goals)
 ```
+## Scoring is down in 2025 compared to 2024, but it is hardly a difference. Our null hypothesis, that there is no significant difference in scoring between the two years, is correct. Our p-value confirms that there is no statistical significance. The only reason there might be a slight difference is because up until the same date in both years, 2025 has 47 more matches played amongst all teams. Now, we;ll take a look to see if there is any difference between Maryland's team across both years.
+
+```{r}
+terps_2025 <- matches_2025 |>
+filter(team == "Maryland Terrapins, Terps")
+
+terps_2024 <- matches_2024 |>
+filter(team == "Maryland Terrapins, Terps")
+```
+
+
+```{r}
+t.test(terps_2024$total_goals, terps_2025$total_goals)
+```
+## Once again, there is hardly a difference. The one reason why the scoring might be higher in 2024 is because there was one more game played by the Terps by that time last year. But once again, our p-value shows us that it is not of statistical significance.
+
+### WOMEN'S SOCCER TEST ASSIGNMENT ENDS HERE
+
+
 
 
 ```{r}
