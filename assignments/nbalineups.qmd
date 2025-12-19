@@ -1,0 +1,10 @@
+```{r}
+library(tidyverse)
+library(hoopR)
+```
+
+
+```{r}
+wizards <- read_csv("wizards.csv")
+```
+

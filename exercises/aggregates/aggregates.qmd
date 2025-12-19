@@ -82,7 +82,9 @@ The `read_csv` bits are pretty obvious, except for one thing. What happens in th
 ```{r}
 nbaplayers <- read_csv("data/nbaadvancedplayers2425.csv")
 ```
-**Answer** DESCRIBE THE RESULTS HERE
+**Answer** 
+
+The file that we ran contains all the NBA players who played in the 2024-2025 season and specific facts about them - what team they play for, how many games they played, what their cumulative stats were, etc.
 
 Now we can inspect the data we imported. What does it look like? To do that, we use `head(nbaplayers)` to show the headers and **the first six rows of data**. If we wanted to see them all, we could just simply enter `nbaplayers` and run it.
 
@@ -116,7 +118,9 @@ nbaplayers |>
   )
 ```
 
-**Answer** DESCRIBE THE RESULTS HERE
+**Answer** 
+
+The code that we wrote broke all the players in our dataset into their respective positions and showed us how many players there are at each position. 
 
 So let's walk through that. We start with our dataset -- `nbaplayers` -- and then we tell it to group the data by a given field in the data which we get by looking at either the output of `head` or you can look in the environment where you'll see `nbaplayers`.
 
@@ -133,7 +137,9 @@ nbaplayers |>
   arrange(desc(total))
 ```
 
-**Answer** HOW WOULD YOU DESCRIBE THE RESULTS?
+**Answer** 
+
+In this code of block, we expanded on the previous by asking R to arrange the different positions in descending order of how many players there are at each respective position. 
 
 We can, if we want, group by more than one thing. Which team has the most of a single position? To do that, we can group by the team -- called Team in the data -- and position, or Pos in the data:
 
@@ -206,4 +212,4 @@ So again, no surprise, shooting guards spend the most minutes on the floor in th
 
 Among the top five positions, which one seems the most interesting to you and why? What's a possible story here?
 
-**ANSWER** 
+I think center is the most interesting position here since its standard deviation is the lowest. One reason for that might be because the NBA has had a bit of a resurgance of dominant big men in the last few years, but with a wrinkle: they're becoming excellent shooters as well as floor spacers. NBA basketball continues to grow more into a positionless game where they ask all players on the floor to be able to do everything - shoot, pass, rebound, etc. A possible story might be how stats amongst centers have changed since 2000.
