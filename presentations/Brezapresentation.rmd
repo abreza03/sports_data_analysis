@@ -4,7 +4,7 @@ Author: Andrew Breza
 Date:11/2/25
 ---
 
-## Within the past 5 years or so, NFL teams have been going for it on 4th down more frequently, with the reasoning of "it's what the analytics say to do". But what analytics are those actually? Are they correct? My goal was to see if there was a correlation between 4th down attempts converted and offensive success, primarily by measuring EPA, along with measuring a few other factors such as time on the clock, field position, score, etc. I was also trying to keep in mind other factors that are more difficult to track through code: how effective is a team's offensive line? Do they have a mobile quarterback who can extend broken plays? Let's dig in.
+## Within the past 5 years or so, NFL teams have been going for it on 4th down more frequently, with the reasoning of "it's what the analytics say to do". But what analytics are those actually? Are they correct? My goal was to see if there was a correlation between 4th down attempts converted and offensive success, primarily by measuring EPA, along with measuring a few other factors such as time on the clock, field position, score, etc. I was also trying to keep in mind other factors that are more difficult to track through code: how effective is a team's offensive line? Do they have a mobile quarterback who can extend broken plays? In order to do this, I used different datasets under "nflverse". Let's dig in.
 
 ```{r}
 library(tidyverse)

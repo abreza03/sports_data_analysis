@@ -1,4 +1,136 @@
-```{r}
+---
+title: "Analyzing the relationship between 4th down attempts and wins in the NFL"
+Author: Andrew Breza
+Date: 12/19/25
+---
 
+## Within the past 5 years or so, NFL teams have been keeping their offenses on the field for 4th down more frequently. NFL teams and media outlets alike have become more data-driven in decision making. "It's what the analytics say to do," has become a popular but overused phrase. Because...do most people know what analytics those actually are, or what they mean? Are they actually correct? My goal was to see if there was a correlation between attempting 4th down conversions and offensive success, primarily by measuring Expected Points Added (EPA), along with measuring a few other factors such as time on the clock, field position, score, and more. Let's dig in.
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+library(nflverse)
+```
+
+## In this exploration, we'll be using data from the 2024 NFL season. We'll start with every play from every game, both regular season and the postseason.
+
+```{r}
+season <- 2024
+
+pbp <- load_pbp(2024)
+
+fourth_down_pbp <- pbp |> 
+filter(down == 4, play_type %in% c("run", "pass")) |> 
+mutate(fourth_down_successful = yards_gained > ydstogo)
+```
+
+## We've now narrowed down our initial data set to exclusively 4th down attempts, ruling out field goals. The first thing I want to look at is how successful each team was on 4th down, displaying their number of attempts, their number of conversions, their conversion percentage, and the mean EPA they produced on all those plays. I also created a new metric, "fourth_down_successful", to indicate which attempts were converted. Let's make an initial table.
+
+```{r}
+fourth_down_team_stats <- fourth_down_pbp |>
+  group_by(posteam)|>
+  summarize(
+    Attempts = n(),
+    Conversions = sum(fourth_down_successful),
+    Conversion_pct = (Conversions/Attempts)*100,
+    Avg_EPA = mean(epa)) |>
+  arrange(desc(Avg_EPA))
+```
+
+## Note that "posteam" is the team with possession. The first team to stick out is Washington, who led the league in conversions, conversion percentage, and average EPA. The only team who had more attempts was Cleveland. On the exact opposite side, Minnesota and Pittsburgh, who were both playoff teams, were bottom three in both categories. Let's join this play-by-play data with some overall team data, most notably wins.
+
+```{r}
+games_2024 <- nflreadr::load_schedules(2024)
+
+standings_2024 <- nflseedR::nfl_standings(games_2024)
+
+wins_2024 <- standings_2024 |> 
+group_by(team) |> 
+summarize(total_wins = wins)
+
+colnames(wins_2024)[colnames(wins_2024) == "team"] <- "posteam"
+
+team_success <- wins_2024 |> 
+inner_join(fourth_down_team_stats, join_by(posteam))
+```
+## That's a lot of data to sort through, but we know from our fourth down team chart that there were multiple playoff teams that did not rank high in either fourth down conversion rate or in average EPA. Let's create a filtered table showing us where the each team ranked in these categories.
+
+```{r}
+library(gt)
+
+playoff_teams <- c("WAS", "BUF", "DEN", "PHI", "LA", "TB", "LAC", "HOU", 
+                   "DET", "KC", "BAL", "GB", "PIT", "MIN")
+
+top_10_epa <- c("DET", "KC", "HOU")
+
+top_10_4D_pct <- c("TB", "LAC")
+
+top_10_both <- c("WAS", "BUF", "DEN", "PHI", "LA")
+
+top_10_neither <- c("BAL", "GB", "PIT", "MIN")
+
+playoff_team_ranks <- team_success |>
+  filter(posteam %in% playoff_teams) |>
+  mutate(
+    group = case_when(
+      posteam %in% top_10_both ~ "top_10_both",
+      posteam %in% top_10_epa ~ "top_10_epa",
+      posteam %in% top_10_4D_pct ~ "top_10_4D_pct",
+      TRUE ~ "top_10_neither"))
+
+playoff_team_ranks |> gt()
+```
+
+## So, we can very clearly see that a team's number of wins is not directly correlated to their EPA outputs on 4th down attempts. Four playoff teams from last season ranked neither Top 10 in EPA nor in 4th down conversion percentage, while another five teams ranked top 10 in just one of the two. However, it is worth noting that three of the four teams off both lists lost in the Wild Card, while three of the five teams on both made it to their respective conference championship games. 
+
+## Let's do one last test: instead of measuring total wins against fourth down conversion percentage and EPA, let's test Win Probably Added (wpa) for each of our playoff team's attempts. 
+
+```{r}
+playoff_team_wpa <- fourth_down_pbp |>
+  filter(posteam %in% playoff_teams) |>
+   group_by(posteam)|>
+  summarize(
+    Attempts = n(),
+    Conversions = sum(fourth_down_successful),
+    Conversion_pct = (Conversions/Attempts)*100,
+    Avg_EPA = mean(epa),
+    Total_WPA = sum(wpa))
+
+final_chart <- wins_2024 |> 
+inner_join(playoff_team_wpa, join_by(posteam))
+```
+
+
+```{r}
+fit <- lm(Total_WPA ~ Conversion_pct + Avg_EPA, data = final_chart)
+summary(fit)
+```
+## We get a statistically significant p-value, and a decently high Adjusted R-squared value of 68.76%. So while total wins may not be heavily influenced by a team's success at generating EPA on 4th down, it certainly affects their chances of winning respective games. 
+
+```{r}
+final_chart |>
+  ungroup() |> 
+  summarise(
+    EPA = mean(Avg_EPA),
+    Fourth = mean(Conversion_pct))
+```
+```{r}
+ggplot() +
+  geom_point(
+    data=final_chart,
+    aes(x=Avg_EPA, y=Conversion_pct, size=Total_WPA), alpha = .3) + scale_size(range = c(3, 8), name="WPA") +
+geom_vline(xintercept = 0.500777) +
+geom_hline(yintercept = 51.31554) +
+geom_point(data=final_chart,
+           aes(x=Avg_EPA, y=Conversion_pct, size=Total_WPA), color="red") +
+geom_text_repel(data=final_chart,
+          aes(x=Avg_EPA, y=Conversion_pct, size=Total_WPA, label = posteam)) +
+labs(title="Measuring Offensive Success on 4th Down", subtitle="Going for it on 4th Down doesn't translate to wins, but it certainly increases your chances", caption="Source: NFL | By Andrew Breza")  + theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 8), 
+    plot.subtitle = element_text(size=10), 
+    panel.grid.minor = element_blank()
+    )
 ```
 
