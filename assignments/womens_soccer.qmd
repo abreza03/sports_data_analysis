@@ -220,3 +220,59 @@ summary(terps_defensive_sog_model)
 ```
 ### Women's Soccer Correlation Story Pitch
 The correlation between defensive shots on goal allowed and game outcome for Maryland Women's Soccer is statistically significant. In all four of their losses so far this season, their shots on goal differential has been heavily in the negatives, with each being at least -5. In three of their four losses, the Terps only got one shot on goal. However, what's interesting about this is that in their latest game against Purdue, the Terps were once again in the negatives - -4 - but they won. What specifically did they do to overcome what has typically buried them in past games?
+
+
+### RESIDUALS ASSIGNMENT BEGINS HERE
+
+```{r}
+matches25 <- matches_2025 |>
+  mutate(
+    Differential = team_score - opponent_score,
+    NetAttempts = sh_att - defensive_sh_att,
+    NetOnGoal = so_g - defensive_so_g,
+    NetCorners = corners - defensive_corners,
+    NetYellows = defensive_yellow_cards - yellow_cards
+  )
+```
+
+```{r}
+model <- lm(Differential ~ NetAttempts + NetOnGoal + NetCorners + NetYellows, data = matches25)
+summary(model)
+```
+## I initially tried looking at fouls, which yielded an Adjusted r-squared of about 53%. I switched to yellow cards, but there wasn't much difference. I chose these metrics because they're the best offensive metrics in the dataset, and there's not a lot of great defensive data. It's a good model overall because according to the p-value it's statistically significant, the Adjusted r-squared value tells us these metrics can predict for over half of these games' differentials. What's especially impressive is that we have a very low residual standard error. 
+
+```{r}
+match_residuals <- matches25 |>
+mutate(
+  predicted = predict(model),
+  residuals = residuals(model)
+)
+
+match_residuals |>
+  group_by(team) |>
+  arrange(desc(residuals)) |>
+  select(opponent, outcome, Differential, predicted, residuals) |>
+ top_n(10)
+```
+```{r}
+match_residuals |>
+  group_by(team) |>
+  arrange(residuals) |>
+  select(opponent, outcome, Differential, predicted, residuals) |>
+ top_n(10)
+```
+## It's interesting that a lot of the overperformances are as high as they are, while the underperformances seem more on par with soccer scores, which are typically low scoring. 
+
+```{r}
+match_residuals |>
+  filter(team == "Maryland Terrapins, Terps") |>
+  group_by(team) |>
+  arrange(desc(residuals)) |>
+  select(opponent, outcome, Differential, predicted, residuals)
+```
+## The most noteworthy thing is that based on our metrics, the model predicted the Terps to lose in all but 5 games - unsurprisingly, all their games against non-conference opponents, excluding Michigan. The Terps' biggest over-performance came against Purdue, when the model predicted them to lose by 1.3 goals. Instead, the Terps won by a goal. Another interesting thing we see is that the model correctly predicted the outcome in all but four games, and the vast majority of its predictions were pretty spot on. I'm not quite sure what the story would be here, since there's nothing particularly shocking about what we found. 
+
+## I'd say what surprised me the most through this analysis was the fact that our Adjusted R-squared value wasn't higher. If I were to pursue a story using these tools, I'd want to throw in more data points (perhaps a larger dataset as a whole as well) to see what gets the Adjusted r-squared value particularly high. 
+
+### RESIDUALS ASSIGNMENT ENDS HERE
+
