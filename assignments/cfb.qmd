@@ -1,0 +1,42 @@
+```{r}
+library(tidyverse)
+```
+```{r}
+logs <- read.csv("https://dwillis.github.io/sports-data-files/footballlogs1124.csv")
+
+logs <- logs |>
+  mutate(
+    Differential = TeamScore - OpponentScore,
+    NetPenalties = DefPenalties - Penalties)
+```
+```{r}
+fit <- lm(Differential ~ NetPenalties, data = logs)
+summary(fit)
+```
+## Our p-value is substantially below .05, meaning these results are not random chance. However, our Adjusted R-squared value is incredibly low, basically stating that only about .07% of the differential can be explained by penalty yards. So this model isn't useful at all. 
+
+```{r}
+logs <- logs |>
+  mutate(
+    NetTurnovers = DefTotalTurnovers - TotalTurnovers,
+    NetAvg = OffenseAvg - DefAvg)
+```
+
+```{r}
+model <- lm(Differential ~ NetPenalties + NetTurnovers + NetAvg, data = logs)
+summary(model)
+```
+## By adding NetTurnovers and NetAvg (average yards per play for both sides), we get a much better model. Our Adjusted R-squared value significantly increased, where we can say that 79% of the differntial can be explained by our metrics. We also substantially lowered the Residual standard error. 
+
+```{r}
+close_games <- logs |>
+   filter(between(Differential, -10, 10))
+```
+
+```{r}
+model <- lm(Differential ~ NetPenalties + NetTurnovers + NetAvg, data = close_games)
+summary(model)
+```
+## I thought by narrowing our data set down to games where the differential was between -10 and 10, as in a team either won or lost by less than 10 points, that our Adjusted r-squared value would increase. Instead, it decreased by over 50%. These results might indicate that most close games typically aren't affected heavily by net turnovers, penalties, and yards per play. 
+
+## I think that penalties and turnovers are insanely important to the outcome of football games. Typically, the winning team is the team who just makes less mistakes. I don't think it should be used when discussing close point differntial though. It may better help explain why some games are blowouts. I think the relationship between penalties and score differential can be useful, but only in specific scenarios. In my opinion, if one were to use this in a piece, context is necessary. 
