@@ -1,0 +1,49 @@
+---
+title: "wbb"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+```{r}
+logs <- read.csv("https://dwillis.github.io/sports-data-files/wbbstats1525.csv")
+
+glimpse(logs)
+```
+```{r}
+pergame <- logs |> 
+  mutate(
+    PointsPerG = ForPoints / Games,
+    FGPctPerG = FieldGoalPCT / Games,
+    ThreePctPerG = ThreePointPct / Games,
+    ReboundsPerG = TotalRebounds/ Games,
+    TurnoversPerG = Turnovers / Games) |>
+  select(Season, School, Games, PointsPerG, FGPctPerG, ThreePctPerG, ReboundsPerG, TurnoversPerG)
+```
+
+```{r}
+teamzscores <- pergame |>
+  mutate(
+    PointsZScore = as.numeric(scale(PointsPerG, center = TRUE, scale = TRUE)),
+    FGPctZScore = as.numeric(scale(FGPctPerG, center = TRUE, scale = TRUE)),
+    ThreePctZScore= as.numeric(scale(ThreePctPerG, center = TRUE, scale = TRUE)),
+    ReboundsZScore = as.numeric(scale(ReboundsPerG, center = TRUE, scale = TRUE)),
+    TurnoversZScore = as.numeric(scale(TurnoversPerG, center = TRUE, scale = TRUE)),
+    TotalZScore = PointsZScore + FGPctZScore, ThreePctZScore, ReboundsZScore, TurnoversZScore) |>
+  arrange(desc(TotalZScore))
+```
+
+## Upon running this, we can notice that the data set the season values to the second year in which they were played - i.e., 2020-2021 season was set to 2021. We get a lot of 2021 teams at the top because COVID shortened many teams' seasons - the top initial team, 2021 Duke, played only four games. Weirdly enough, Maryland played 29. I decided to just filter out 2021 seasons because of this. 
+
+```{r}
+teamzscores |>
+  filter(!Season == "2021")
+```
+## By doing this, we see that 2017 Maryland was actually the highest performing team over the last decade. Four different UConn teams made it as well, two of which were national championship winning teams, the only two champion teams in the top 10. Some other schools that won the championship within the past decade are on here, but interestingly not the year they won it all - 2017 & 2018 Baylor (won in 2019). Let's take a look at just Maryland.
+
+```{r}
+teamzscores |>
+  filter(School == "Maryland")
+```
+## 2021 Maryland is the highest performing Terp team of the last decade by the metric, but also played the least amount of games out of every other year. I'm actually curious as to why they had a full season while others did not. Their 2020 squad was also excellent, but didn't have the chance to compete in the tournament since COVID canceled it. 
