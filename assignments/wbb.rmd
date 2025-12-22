@@ -47,3 +47,16 @@ teamzscores |>
   filter(School == "Maryland")
 ```
 ## 2021 Maryland is the highest performing Terp team of the last decade by the metric, but also played the least amount of games out of every other year. I'm actually curious as to why they had a full season while others did not. Their 2020 squad was also excellent, but didn't have the chance to compete in the tournament since COVID canceled it. 
+
+### WRITEUP
+We often hear the expression "in a league of their own" used to describe great players, coaches, and teams. 
+
+Geno Auriemma and UConn's women's basketball redefines that expression into "a league nobody else might ever reach."
+
+For starters, UConn has won 12 national championships with Auriemma at the helm, including a four-peat from 2013-2016. They also just became national champions again in 2025 - Auriemma's 40th season leading the program. 
+
+Winning a championship has so much that goes into it beyond just performance. The difference with UConn is that they've simply never NOT performed.
+
+Amongst the ten best statistical teams of the past decade - measured by field goal percentage, three point percentage, total rebounds, and total turnovers - Auriemma led four different squads onto that list, two of them national championship teams - the only two on the list. Furthermore, if you look at the greatest teams by field goal percentage each season, UConn has the top four squads, all four in a four year period from 2015-2018.
+
+It's way past time to throw Auriemma into the greatest coach of all time debate. His level of dominance defines a level that nobody else might reach.
