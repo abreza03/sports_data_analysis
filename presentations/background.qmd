@@ -1,0 +1,43 @@
+---
+title: "background"
+format: html
+---
+
+I started off by trying to see if I could make a presentation related to the "Down 8" test in the NFL. The test refers to when a team is losing by 14, but then scores a touchdown. Now down 8, the coach has a decision to make. Does he kick the extra point or does he go for 2? Many people's first inclination and the easy answer is to kick the extra point - why risk missing the 2 point conversion just to have to do it again later. ESPN's Seth Walder researched the data and ran tests. For the vast majority of the time, a team's chance to win the game going for 2 when down 8 is higher than if they kick the extra point, regardless if they convert or not. Now, a lot does hinge on that data, but it's mathematically sound. 
+
+Link to the article: https://www.espn.com/nfl/story/_/id/28100383/going-2-8-points-why-nfl-teams-keep-doing-why-analytics-backs-up
+
+Although I wanted to do something with this, there were too many factors and two small a data set to make a compelling presentation. So, I pivoted to just fourth downs. Within the past 5 years or so, NFL teams have been going for it on 4th down more frequently, with the reasoning of "it's what the analytics say to do." Those "analytics" are typically a team's winning percentage if they choose to go for it or if they choose to punt. 
+
+I decided to look at that in two conexts: going for it anytime, and going for it in crunch time, which I defined as the team with possession is losing with less than 5 minutes to go in the 4th quarter. 
+
+Some of that initial data:
+
+```{r}
+season <- 2024
+
+pbp <- load_pbp(2024)
+
+fourth_down_pbp <- pbp |> 
+filter(down == 4, play_type %in% c("run", "pass"), yards_gained > ydstogo) |> 
+mutate(fourth_down_successful = yards_gained > ydstogo)
+
+fourth_down_pbp |> 
+group_by(posteam) |> 
+summarise(epa)
+```
+
+```{r}
+fit <- lm(fourth_down_successful ~ epa, data = fourth_down_pbp)
+summary(fit)
+```
+
+```{r}
+clutch_time <- fourth_down_pbp |> 
+filter(qtr == 4, game_seconds_remaining < 300, posteam_score < defteam_score)
+
+fit <- lm(fourth_down_successful ~ epa, data = clutch_time) 
+summary(fit)
+```
+
+A good start, but as we've established, I shouldn't have filtered out successful conversions. 
