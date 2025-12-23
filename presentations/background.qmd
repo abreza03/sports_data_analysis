@@ -41,3 +41,106 @@ summary(fit)
 ```
 
 A good start, but as we've established, I shouldn't have filtered out successful conversions. 
+
+## FIRST PRESENTATION REFINING
+
+```{r}
+fourth_down_attempts <- fourth_down_pbp |> 
+group_by(posteam) |> 
+  summarise(plays = n(), total_epa = sum(epa)) |> 
+  arrange(desc(total_epa))
+```
+```{r}
+ggplot() + geom_point(data = fourth_down_attempts, aes(x=plays, y=total_epa)) +
+geom_smooth(data = fourth_down_attempts, aes(x=plays, y=total_epa), method = lm)
+```
+
+```{r}
+fourth_q_fourth_downs_epa <- clutch_time |> 
+group_by(posteam) |> 
+  summarise(plays = n(), total_epa = sum(epa)) |>
+  arrange(desc(total_epa))
+```
+
+```{r}
+fourth_q_fourth_downs_wpbefore <- clutch_time |> 
+group_by(posteam) |> 
+  summarise(plays = n(), wp_before = sum(wp)) |> 
+  arrange(desc(wp_before))
+```
+
+```{r}
+fourth_q_fourth_downs_wpafter <- clutch_time |> 
+group_by(posteam) |> 
+  summarise(plays = n(), wp_after = sum(wpa)) |> 
+  arrange(desc(wp_after))
+```
+
+```{r}
+bears_results_away <- clutch_time |> 
+filter(posteam == "CHI", away_team == "CHI") |> 
+group_by(posteam) |>
+  summarise(Bears = total_away_score, Opponent = total_home_score)
+
+bears_results_home <- clutch_time |> 
+filter(posteam == "CHI", home_team == "CHI") |> 
+group_by(posteam) |> 
+  summarise(Bears = total_home_score, Opponent = total_away_score)
+
+bears_results_total <- bind_rows(bears_results_away, bears_results_home)
+```
+
+```{r}
+fourth_down_totals <- pbp |> 
+filter(down == 4, play_type %in% c("run", "pass")) |> 
+group_by(posteam) |> 
+  summarise(fourth_downs = n()) |> 
+  arrange(desc(fourth_downs))
+
+fourth_down_successful <- fourth_down_pbp |> 
+group_by(posteam) |> 
+  summarize(fourth_down_conversions = n()) |> 
+  arrange(desc(fourth_down_conversions))
+
+combined_fourth_downs <- fourth_down_totals |> 
+inner_join(fourth_down_successful, join_by(posteam)) |>
+mutate(fourth_down_pct = fourth_down_conversions/fourth_downs *100) |> 
+  arrange(desc(fourth_down_pct))
+
+fourth_down_epa <- fourth_down_pbp |> 
+group_by(posteam) |> 
+  summarise(total_epa = sum(epa)) |> 
+  arrange(desc(total_epa))
+
+fourth_down_epa_plus_conversion <- combined_fourth_downs |> 
+inner_join(fourth_down_epa, join_by(posteam))
+```
+
+```{r}
+install.packages("nflverse")
+library(nflverse)
+install.packages("dyplr")
+library(dplyr)
+```
+
+```{r}
+games_2024 <- nflreadr::load_schedules(2024)
+
+standings_2024 <- nflseedR::nfl_standings(games_2024)
+
+wins_2024 <- standings_2024 |> 
+group_by(team) |> 
+summarise(total_wins = wins)
+
+colnames(wins_2024)[colnames(wins_2024) == "team"] <- "posteam"
+
+final_chart <- wins_2024 |> 
+inner_join(fourth_down_epa_plus_conversion, join_by(posteam))
+
+colnames(final_chart)[colnames(final_chart) == "total_wins"] <- "Wins"
+colnames(final_chart)[colnames(final_chart) == "fourth_down_pct"] <- "FourthDownConversionPercentage"
+colnames(final_chart)[colnames(final_chart) == "total_epa"] <- "OffensiveEPA"
+  
+```
+
+## I messed around with this data a lot. It certainly took a while but I feel like I learned a lot and became more comfortable throughout the process. While the data I found was interesting, I spent too much time looking into stuff that didn't really serve my actual presentation. 
