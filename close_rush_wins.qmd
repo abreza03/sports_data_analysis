@@ -1,0 +1,115 @@
+---
+title: "How often do teams win games in which they rush for less than 100 yards?"
+author: "Andrew Breza"
+date: '2025-12-23'
+categories: [lowercaseword, lowercaseword, lowercaseword]
+image: "image.png"
+format: 
+  html:
+    code-fold: true
+---
+
+It's not common for any team to win a game in which they rush for less than 100 yards, but it has been done. How many times though? What has to happen in order for it to occur? We're looking at games for the past five seasons (2021-2025).
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+logs <- read.csv("https://thescoop.org/sports-data-files/footballlogs1525.csv") 
+
+games_per_season <- logs %>%
+  mutate(
+    game_date = as.Date(Date),
+    Season = if_else(month(game_date) >= 8, year(game_date), year(game_date) - 1)
+  ) %>%
+  count(Season, name = "game_count")
+```
+
+Here, we created a new dataframe that counts all the games in each season. Since football seasons are technically played out over two calendar years, we had to make sure we included that factor. Now, we want to create a new dataframe that only shows games in which teams that rushed for less than 100 yards won the game.
+
+```{r}
+lrw <- logs |>
+  filter(RushYds < 100, Result == "W")
+
+lrw_per_season <- lrw %>%
+  mutate(
+    game_date = as.Date(Date),
+    Season = if_else(month(game_date) >= 8, year(game_date), year(game_date) - 1)
+  ) %>%
+  count(Season, name = "lrw_count")
+```
+
+What we want to do next is calculate what percentage of games in a season teams accomplished this feat. So, we need to join the two tables.
+
+```{r}
+combined <- games_per_season |>
+  inner_join(lrw_per_season, by = "Season")
+
+combined |>
+  mutate(
+    lrw_pct = (lrw_count/game_count)*100)
+```
+
+As we can see, it's incredibly rare for teams to win games where they rush for less than 100 yards. The year with the highest amount of such games was 2021, which was only about 6.27% of the time.
+
+Let's take a look at a specific team, in this case, the Maryland Terrapins.
+
+```{r}
+terp_games <- logs |>
+  filter(Team == "Maryland")
+
+terp_games_per_season <- terp_games %>%
+  mutate(
+    game_date = as.Date(Date),
+    Season = if_else(month(game_date) >= 8, year(game_date), year(game_date) - 1)
+  ) %>%
+  count(Season, name = "terp_game_count")
+```
+
+We now have how many games the Terps have played each season since 2015. Note: the data we're using is only updated until their game against Rutgers on 11/08/25. Now let's see how many times they won when they rushed for less than 100 yards in those seasons.
+
+```{r}
+terps_lrg <- terp_games |>
+  filter(RushYds < 100)
+
+terps_lrw <- terps_lrg |>
+  filter(Result == "W")
+
+terp_lrw_per_season <- terps_lrw %>%
+  mutate(
+    game_date = as.Date(Date),
+    Season = if_else(month(game_date) >= 8, year(game_date), year(game_date) - 1)
+  ) %>%
+  count(Season, name = "terp_lrw_count")
+
+terps_combined <- terp_games_per_season |>
+  inner_join(terp_lrw_per_season, by = "Season")
+
+terps_combined_pct <- terps_combined |>
+  mutate(
+    terp_lrw_pct = (terp_lrw_count/terp_game_count)*100)
+```
+
+The Terps had no wins with less than 100 rushing yards from 2015-2020. Since then, they've accomplished that feat once in every season besides 2023, and twice in 2025. Let's see those percentages in a stacked bar chart.
+
+```{r}
+terps_combined_sums <- terps_combined |>
+  group_by(Season) |>
+  summarize(
+    total_low_rush_wins = sum(terp_lrw_count),
+    total_games = sum(terp_game_count)
+  )
+
+final_chart <- terps_combined_sums |>
+  pivot_longer(
+    cols=starts_with("total"),
+    names_to = "Game_Type",
+    values_to = "Count"
+  )
+
+ggplot() + 
+  geom_bar(
+    data=final_chart, 
+    aes(x=Season, weight=Count, fill=Game_Type))
+```
