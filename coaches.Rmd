@@ -327,7 +327,10 @@ print(case_examples)
 **Task:** Find the three most common standardized position titles and their counts.
 
 ```{r verify-top-positions}
-
+positions_standardized |>
+  count(position_title_standardized, sort = TRUE) |>
+  mutate(percentage = n / sum(n) * 100) |>
+top_n(3)
 
 
 ```
@@ -387,6 +390,8 @@ positions_with_roles |>
   head(5)
 
 # Question: Are there any common patterns in compound roles?
+
+# Answer: Common patterns include "Director of Scouting and Recruiting" and "Assistant Coach & Recruiting Coordinator"
 ```
 
 ## Exercise 6: Verify "Other" Category
